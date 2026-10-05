@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UI desc="MainLayout">
+  <grid-layout class="matlab.ui.container.GridLayout" id="MainGrid">
+    <row-height value="1x"/>
+    <column-width value="1x"/>
+    <padding left="0" right="0" top="0" bottom="0"/>
+    <spacing row="0" column="0"/>
+    <children>
+      <tab-group class="matlab.ui.container.TabGroup" id="TabGroup" tabLocation="top">
+        <tabs>
+
+          <tab class="matlab.ui.container.Tab" id="ImportTab" title="Import Data">
+            <children>
+              <grid-layout class="matlab.ui.container.GridLayout" id="ImportGrid">
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <row-height value="1x"/>
+                <row-height value="1x"/>
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <column-width value="fit"/>
+                <column-width value="1x"/>
+                <padding left="10" right="10" top="10" bottom="10"/>
+                <spacing row="8" column="5"/>
+                <children>
+                  <button class="matlab.ui.control.Button" id="FileButton" text="Browse File..." tooltip="Select ANSYS .txt file">
+                    <callback event="ButtonPushed" method="FileButtonPushed"/>
+                    <layout row="1" column="1"/>
+                  </button>
+                  <edit-field class="matlab.ui.control.EditField" id="FilePathField" editable="false" value="">
+                    <layout row="1" column="2"/>
+                  </edit-field>
+                  <label class="matlab.ui.control.Label" id="DatasetNameLabel" text="Dataset Name:">
+                    <layout row="2" column="1"/>
+                  </label>
+                  <edit-field class="matlab.ui.control.EditField" id="DatasetNameField" value="">
+                    <layout row="2" column="2"/>
+                  </edit-field>
+                  <button class="matlab.ui.control.Button" id="AddDatasetButton" text="Add Dataset" buttonStyle="primary">
+                    <callback event="ButtonPushed" method="AddDatasetButtonPushed"/>
+                    <layout row="3" column="1" columnSpan="2"/>
+                  </button>
+                  <list-box class="matlab.ui.control.ListBox" id="DatasetListBox" items="">
+                    <callback event="ValueChanged" method="DatasetListBoxChanged"/>
+                    <layout row="4" column="1" rowSpan="2" columnSpan="2"/>
+                  </list-box>
+                  <button class="matlab.ui.control.Button" id="RemoveDatasetButton" text="Remove Dataset">
+                    <callback event="ButtonPushed" method="RemoveDatasetButtonPushed"/>
+                    <layout row="6" column="1" columnSpan="2"/>
+                  </button>
+                  <label class="matlab.ui.control.Label" id="StatusLabel" text="Ready">
+                    <layout row="8" column="1" columnSpan="2"/>
+                  </label>
+                </children>
+              </grid-layout>
+            </children>
+          </tab>
+
+          <tab class="matlab.ui.container.Tab" id="AnalysisTab" title="Analysis">
+            <children>
+              <grid-layout class="matlab.ui.container.GridLayout" id="AnalysisGrid">
+                <row-height value="1x"/>
+                <column-width value="220"/>
+                <column-width value="1x"/>
+                <padding left="5" right="5" top="5" bottom="5"/>
+                <spacing row="0" column="5"/>
+                <children>
+
+                  <grid-layout class="matlab.ui.container.GridLayout" id="ParamPanel">
+                    <row-height value="fit"/>
+                    <row-height value="fit"/>
+                    <row-height value="fit"/>
+                    <row-height value="fit"/>
+                    <row-height value="fit"/>
+                    <row-height value="fit"/>
+                    <row-height value="fit"/>
+                    <row-height value="fit"/>
+                    <row-height value="fit"/>
+                    <row-height value="fit"/>
+                    <row-height value="fit"/>
+                    <column-width value="fit"/>
+                    <column-width value="1x"/>
+                    <padding left="5" right="5" top="5" bottom="5"/>
+                    <spacing row="5" column="5"/>
+                    <children>
+                      <label text="Dataset:" fontWeight="bold">
+                        <layout row="1" column="1"/>
+                      </label>
+                      <drop-down class="matlab.ui.control.DropDown" id="DatasetDropdown" items="">
+                        <callback event="ValueChanged" method="DatasetDropdownChanged"/>
+                        <layout row="1" column="2"/>
+                      </drop-down>
+                      <label text="Nxx:">
+                        <layout row="2" column="1"/>
+                      </label>
+                      <spinner class="matlab.ui.control.Spinner" id="NxxField" value="100" step="1" limits="1,inf">
+                        <callback event="ValueChanged" method="ParamChanged"/>
+                        <layout row="2" column="2"/>
+                      </spinner>
+                      <label text="Nyy:">
+                        <layout row="3" column="1"/>
+                      </label>
+                      <spinner class="matlab.ui.control.Spinner" id="NyyField" value="20" step="1" limits="1,inf">
+                        <callback event="ValueChanged" method="ParamChanged"/>
+                        <layout row="3" column="2"/>
+                      </spinner>
+                      <label text="Np:">
+                        <layout row="4" column="1"/>
+                      </label>
+                      <spinner class="matlab.ui.control.Spinner" id="NpField" value="10" step="1" limits="1,inf">
+                        <callback event="ValueChanged" method="ParamChanged"/>
+                        <layout row="4" column="2"/>
+                      </spinner>
+                      <label text="Order:">
+                        <layout row="5" column="1"/>
+                      </label>
+                      <spinner class="matlab.ui.control.Spinner" id="OrderField" value="3" step="1" limits="1,inf" enabled="false">
+                        <callback event="ValueChanged" method="ParamChanged"/>
+                        <layout row="5" column="2"/>
+                      </spinner>
+                      <check-box class="matlab.ui.control.CheckBox" id="FIDCheckBox" text="FID (Polynomial Fit)" value="false">
+                        <callback event="ValueChanged" method="FIDChanged"/>
+                        <layout row="7" column="1" columnSpan="2"/>
+                      </check-box>
+                      <check-box class="matlab.ui.control.CheckBox" id="SymCheckBox" text="Sym (Mirror Grid)" value="false">
+                        <callback event="ValueChanged" method="ParamChanged"/>
+                        <layout row="8" column="1" columnSpan="2"/>
+                      </check-box>
+                      <button class="matlab.ui.control.Button" id="RunButton" text="Run Analysis" buttonStyle="primary">
+                        <callback event="ButtonPushed" method="RunButtonPushed"/>
+                        <layout row="10" column="1" columnSpan="2"/>
+                      </button>
+                    </children>
+                  </grid-layout>
+
+                  <grid-layout class="matlab.ui.container.GridLayout" id="plotStack">
+                    <row-height value="1x"/>
+                    <row-height value="1x"/>
+                    <row-height value="2x"/>
+                    <column-width value="1x"/>
+                    <padding left="5" right="5" top="5" bottom="5"/>
+                    <spacing row="3" column="0"/>
+                    <children>
+                      <axes class="matlab.ui.axes.Axes" id="ContourPlotSag" title="Sagittal Slope [urad]">
+                        <layout row="1" column="1"/>
+                      </axes>
+                      <axes class="matlab.ui.axes.Axes" id="ContourPlotLon" title="Longitudinal Slope [urad]">
+                        <layout row="2" column="1"/>
+                      </axes>
+                      <grid-layout class="matlab.ui.container.GridLayout" id="LinePlotGrid">
+                        <row-height value="1x"/>
+                        <row-height value="1x"/>
+                        <column-width value="1x"/>
+                        <column-width value="1x"/>
+                        <padding left="2" right="2" top="2" bottom="2"/>
+                        <spacing row="2" column="2"/>
+                        <children>
+                          <axes class="matlab.ui.axes.Axes" id="LinePlotAx1">
+                            <layout row="1" column="1"/>
+                          </axes>
+                          <axes class="matlab.ui.axes.Axes" id="LinePlotAx2">
+                            <layout row="1" column="2"/>
+                          </axes>
+                          <axes class="matlab.ui.axes.Axes" id="LinePlotAx3">
+                            <layout row="2" column="1"/>
+                          </axes>
+                          <axes class="matlab.ui.axes.Axes" id="LinePlotAx4">
+                            <layout row="2" column="2"/>
+                          </axes>
+                        </children>
+                      </grid-layout>
+                    </children>
+                  </grid-layout>
+
+                </children>
+              </grid-layout>
+            </children>
+          </tab>
+
+          <tab class="matlab.ui.container.Tab" id="ExportTab" title="Export">
+            <children>
+              <grid-layout class="matlab.ui.container.GridLayout" id="ExportGrid">
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <row-height value="fit"/>
+                <column-width value="fit"/>
+                <column-width value="1x"/>
+                <padding left="10" right="10" top="10" bottom="10"/>
+                <spacing row="8" column="5"/>
+                <children>
+                  <label text="Dataset:" fontWeight="bold">
+                    <layout row="1" column="1"/>
+                  </label>
+                  <drop-down class="matlab.ui.control.DropDown" id="ExportDatasetDropdown" items="">
+                    <layout row="1" column="2"/>
+                  </drop-down>
+                  <label text="Export Directory:" fontWeight="bold">
+                    <layout row="2" column="1"/>
+                  </label>
+                  <edit-field class="matlab.ui.control.EditField" id="ExportDirField" editable="false" value="">
+                    <layout row="2" column="2"/>
+                  </edit-field>
+                  <button class="matlab.ui.control.Button" id="BrowseExportDirButton" text="Browse...">
+                    <callback event="ButtonPushed" method="BrowseExportDirButtonPushed"/>
+                    <layout row="3" column="1" columnSpan="2"/>
+                  </button>
+                  <label text="dver:" fontWeight="bold">
+                    <layout row="4" column="1"/>
+                  </label>
+                  <edit-field class="matlab.ui.control.EditField" id="DverField" value="TEST">
+                    <layout row="4" column="2"/>
+                  </edit-field>
+                  <label text="blname:" fontWeight="bold">
+                    <layout row="5" column="1"/>
+                  </label>
+                  <edit-field class="matlab.ui.control.EditField" id="BlnameField" value="X">
+                    <layout row="5" column="2"/>
+                  </edit-field>
+                  <label text="optname:" fontWeight="bold">
+                    <layout row="6" column="1"/>
+                  </label>
+                  <edit-field class="matlab.ui.control.EditField" id="OptnameField" value="X">
+                    <layout row="6" column="2"/>
+                  </edit-field>
+                  <label text="scename:" fontWeight="bold">
+                    <layout row="7" column="1"/>
+                  </label>
+                  <edit-field class="matlab.ui.control.EditField" id="ScenameField" value="X">
+                    <layout row="7" column="2"/>
+                  </edit-field>
+                  <button class="matlab.ui.control.Button" id="ExportButton" text="Export" buttonStyle="primary">
+                    <callback event="ButtonPushed" method="ExportButtonPushed"/>
+                    <layout row="8" column="1" columnSpan="2"/>
+                  </button>
+                  <label class="matlab.ui.control.Label" id="ExportStatusLabel" text="Ready">
+                    <layout row="10" column="1" columnSpan="2"/>
+                  </label>
+                </children>
+              </grid-layout>
+            </children>
+          </tab>
+
+        </tabs>
+      </tab-group>
+    </children>
+  </grid-layout>
+</UI>

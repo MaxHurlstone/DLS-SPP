@@ -1,14 +1,13 @@
-function [X,Y,U,V,W,S_lon,S_sag,x,y,u,v,w] = sloper(fname,Nxx,Nyy,FID,order,sym)
-%SLOPER Summary of this function goes here
-%   Detailed explanation goes here
+function [X,Y,U,V,W,S_lon,S_sag,x,y,u,v,w] = sloper(data0,Nxx,Nyy,FID,order,sym,is2D)
 
 arguments (Input)
-    fname (1,1) string
+    data0 (:,:) double
     Nxx (1,1) double = 100
     Nyy (1,1) double = 20
     FID (1,1) logical = 0
     order (1,1) int16 = 3
     sym (1,1) logical = 0
+    is2D (1,1) logical = 1
 end
 
 arguments (Output)
@@ -19,25 +18,26 @@ arguments (Output)
     W (:,:) double
     S_lon (:,:) double
     S_sag (:,:) double
-    x  (1,:) double
-    y  (1,:) double
-    u  (1,:) double
-    v  (1,:) double
-    w  (1,:) double
+    x (:,:) double
+    y (:,:) double
+    u (:,:) double
+    v (:,:) double
+    w (:,:) double
 end
 
-% Read ANSYS data
-data0 = readmatrix(fname,'FileType','text','Delimiter','\t','NumHeaderLines',1);
-data0 = unique(data0,'rows');
+try
+
+if ~is2D
+    Nyy = 1;
+    sym = false;
+end
 
 x = data0(:,2);
 y = data0(:,3);
-% z =
 u = data0(:,5);
 v = data0(:,6);
 w = data0(:,7);
 
-% Create regular grid
 xmin = min(x) + 0.01;
 xmax = max(x) - 0.01;
 ymin = min(y) + 0.01;
@@ -47,17 +47,24 @@ xv = linspace(xmin,xmax,Nxx);
 yv = linspace(ymin,ymax,Nyy);
 
 [X,Y] = meshgrid(xv,yv);
-
-% Match original Python grid orientation
 X = X.';
 Y = Y.';
 
-% Interpolate displacements onto regular grid
-U = griddata(x,y,u,X,Y,'linear');
-V = griddata(x,y,v,X,Y,'linear');
-W = griddata(x,y,w,X,Y,'linear');
+if is2D
+    U = griddata(x,y,u,X,Y,'linear');
+    V = griddata(x,y,v,X,Y,'linear');
+    W = griddata(x,y,w,X,Y,'linear');
+else
+    [x, sortIdx] = sort(x);
+    y = y(sortIdx);
+    u = u(sortIdx);
+    v = v(sortIdx);
+    w = w(sortIdx);
+    U = interp1(x, u, xv(:), 'linear');
+    V = interp1(x, v, xv(:), 'linear');
+    W = interp1(x, w, xv(:), 'linear');
+end
 
-% If symmetric half-model
 if sym
     xv = [xv, flip(xv)];
     yv = [yv, flip(yv)];
@@ -66,7 +73,6 @@ if sym
     W = [W; flipud(W)];
 end
 
-% Polynomial fitting of each longitudinal line
 if FID
     for j = 1:Nyy
         c = polyfit(xv,W(:,j),order);
@@ -74,14 +80,28 @@ if FID
     end
 end
 
-% Grid spacing
 dx = abs(xmax - xmin)/Nxx;
-dy = abs(ymax - ymin)/Nyy;
+dy = abs(ymax - ymin)/max(Nyy,1);
 
-% Calculate gradient
-[dWdy,dWdx] = gradient(W,dy,dx);
+if is2D
+    [dWdy,dWdx] = gradient(W,dy,dx);
+else
+    dWdx = gradient(W,dx);
+    dWdy = zeros(size(W));
+end
 
-% Longitudinal slope error
 S_lon = 1e6 * atan(dWdy);
-% Sagittal slope error
 S_sag = 1e6 * atan(dWdx);
+
+x = x.';
+y = y.';
+u = u.';
+v = v.';
+w = w.';
+
+catch ME
+    errLine = ME.stack(1).line;
+    error('sloper.m line %d: %s', errLine, ME.message);
+end
+
+end

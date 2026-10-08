@@ -23,6 +23,7 @@ classdef SloperApp < matlab.apps.AppBase
         BlnameField                matlab.ui.control.EditField
         OptnameField               matlab.ui.control.EditField
         ScenameField               matlab.ui.control.EditField
+        ExportDatasetDropdown      matlab.ui.control.DropDown
         ExportStatusLabel          matlab.ui.control.Label
         ImportExportButton         matlab.ui.control.Button
 
@@ -38,6 +39,7 @@ classdef SloperApp < matlab.apps.AppBase
         SymCheckBox                matlab.ui.control.CheckBox
         RunButton                  matlab.ui.control.Button
         ExportDataButton           matlab.ui.control.Button
+        AnalysisStatusLabel        matlab.ui.control.Label
         plotStack                  matlab.ui.container.GridLayout
         TopPlotGroup               matlab.ui.container.GridLayout
         ContourPlotSag             matlab.graphics.axis.Axes
@@ -47,13 +49,35 @@ classdef SloperApp < matlab.apps.AppBase
         LinePlotAx2                matlab.graphics.axis.Axes
         LinePlotAx3                matlab.graphics.axis.Axes
         LinePlotAx4                matlab.graphics.axis.Axes
-        AnalysisStatusLabel        matlab.ui.control.Label
+        UnitMM                     matlab.ui.control.Button
+        UnitUM                     matlab.ui.control.Button
+        UnitNM                     matlab.ui.control.Button
+        StatsLabelSagRMS           matlab.ui.control.Label
+        StatsLabelSagSTD           matlab.ui.control.Label
+        StatsLabelLonRMS           matlab.ui.control.Label
+        StatsLabelLonSTD           matlab.ui.control.Label
+
+        ComparisonTab              matlab.ui.container.Tab
+        ComparisonGrid             matlab.ui.container.GridLayout
+        CompLeftGrid               matlab.ui.container.GridLayout
+        CompUnitGrid               matlab.ui.container.GridLayout
+        CompTree                   matlab.ui.container.CheckBoxTree
+        CompareButton              matlab.ui.control.Button
+        CompPlotGrid               matlab.ui.container.GridLayout
+        CompDeformationAx          matlab.graphics.axis.Axes
+        CompSlopeAx                matlab.graphics.axis.Axes
+        CompUnitMM                 matlab.ui.control.Button
+        CompUnitUM                 matlab.ui.control.Button
+        CompUnitNM                 matlab.ui.control.Button
+        UnitGrid                   matlab.ui.container.GridLayout
+        StatsGrid                  matlab.ui.container.GridLayout
     end
 
     properties (Access = private)
         Datasets         cell = {}
         SelectedIndex    double = 0
         ExportDir        string = ""
+        CurrentUnit      string = "mm"
     end
 
     properties (Access = private)
@@ -89,10 +113,10 @@ classdef SloperApp < matlab.apps.AppBase
 
             app.TabGroup = uitabgroup(app.MainGrid);
 
-            % ============ Tab 1: Import Data (with Export fields) ============
+            % ============ Tab 1: Import Data ============
             app.ImportTab = uitab(app.TabGroup, 'Title', 'Import Data');
-            app.ImportGrid = uigridlayout(app.ImportTab, [15, 2]);
-            app.ImportGrid.RowHeight = {'fit','fit','fit','fit',80,80,'fit','fit','fit','fit','fit','fit','fit','fit','fit'};
+            app.ImportGrid = uigridlayout(app.ImportTab, [17, 2]);
+            app.ImportGrid.RowHeight = {'fit','fit','fit','fit',80,80,'fit','fit','fit','fit','fit','fit','fit','fit','fit','fit','fit'};
             app.ImportGrid.ColumnWidth = {'fit', 250};
             app.ImportGrid.Padding = [10, 10, 10, 10];
             app.ImportGrid.RowSpacing = 5;
@@ -221,19 +245,38 @@ classdef SloperApp < matlab.apps.AppBase
             app.ScenameField.Layout.Row = 13;
             app.ScenameField.Layout.Column = 2;
 
+            lbl = uilabel(app.ImportGrid);
+            lbl.Text = 'Dataset to Export:';
+            lbl.FontWeight = 'bold';
+            lbl.Layout.Row = 14;
+            lbl.Layout.Column = 1;
+
+            app.ExportDatasetDropdown = uidropdown(app.ImportGrid);
+            app.ExportDatasetDropdown.Items = {''};
+            app.ExportDatasetDropdown.ValueChangedFcn = @app.ExportDatasetDropdownChanged;
+            app.ExportDatasetDropdown.Layout.Row = 14;
+            app.ExportDatasetDropdown.Layout.Column = 2;
+
+            lbl = uilabel(app.ImportGrid);
+            lbl.Text = 'Note: Data must be in mm units.';
+            lbl.FontColor = [0.7, 0.7, 0.1];
+            lbl.FontWeight = 'bold';
+            lbl.Layout.Row = 15;
+            lbl.Layout.Column = [1, 2];
+
             app.ImportExportButton = uibutton(app.ImportGrid, 'ButtonPushed', @app.ExportButtonPushed);
             app.ImportExportButton.Text = 'Export Data';
             app.ImportExportButton.BackgroundColor = [0.125, 0.161, 0.275];
             app.ImportExportButton.FontColor = [0.996, 0.835, 0.008];
             app.ImportExportButton.FontWeight = 'bold';
-            app.ImportExportButton.Layout.Row = 14;
+            app.ImportExportButton.Layout.Row = 16;
             app.ImportExportButton.Layout.Column = [1, 2];
 
             app.ExportStatusLabel = uilabel(app.ImportGrid);
             app.ExportStatusLabel.Text = 'Ready';
             app.ExportStatusLabel.FontWeight = 'bold';
             app.ExportStatusLabel.FontColor = [0.5, 0.5, 0.5];
-            app.ExportStatusLabel.Layout.Row = 15;
+            app.ExportStatusLabel.Layout.Row = 17;
             app.ExportStatusLabel.Layout.Column = [1, 2];
 
             % ============ Tab 2: Analysis ============
@@ -243,9 +286,8 @@ classdef SloperApp < matlab.apps.AppBase
             app.AnalysisGrid.Padding = [5, 5, 5, 5];
             app.AnalysisGrid.ColumnSpacing = 5;
 
-            % -- Param panel --
-            app.ParamPanel = uigridlayout(app.AnalysisGrid, [12, 2]);
-            app.ParamPanel.RowHeight = {'fit','fit','fit','fit','fit','fit','fit','fit','fit','fit','fit','fit'};
+            app.ParamPanel = uigridlayout(app.AnalysisGrid, [15, 2]);
+            app.ParamPanel.RowHeight = {'fit','fit','fit','fit','fit','fit','fit','fit','fit','fit','fit','fit','fit','fit','fit'};
             app.ParamPanel.ColumnWidth = {'fit','1x'};
             app.ParamPanel.Padding = [5, 5, 5, 5];
             app.ParamPanel.RowSpacing = 5;
@@ -264,7 +306,8 @@ classdef SloperApp < matlab.apps.AppBase
             app.DatasetDropdown.ValueChangedFcn = @app.DatasetDropdownChanged;
             app.DatasetDropdown.Layout.Row = 1;
             app.DatasetDropdown.Layout.Column = 2;
-lbl = uilabel(app.ParamPanel);
+
+            lbl = uilabel(app.ParamPanel);
             lbl.Text = 'Nxx:';
             lbl.FontWeight = 'bold';
             lbl.Layout.Row = 2;
@@ -288,7 +331,6 @@ lbl = uilabel(app.ParamPanel);
             app.NyyField.Limits = [1, Inf];
             app.NyyField.ValueChangedFcn = @app.ParamChanged;
             app.NyyField.Layout.Row = 3;
-
             app.NyyField.Layout.Column = 2;
 
             lbl = uilabel(app.ParamPanel);
@@ -321,21 +363,107 @@ lbl = uilabel(app.ParamPanel);
             app.FIDCheckBox = uicheckbox(app.ParamPanel);
             app.FIDCheckBox.Text = 'FID (Polynomial Fit)';
             app.FIDCheckBox.ValueChangedFcn = @app.FIDChanged;
-            app.FIDCheckBox.Layout.Row = 7;
+            app.FIDCheckBox.Layout.Row = 6;
             app.FIDCheckBox.Layout.Column = 1;
 
             app.SymCheckBox = uicheckbox(app.ParamPanel);
             app.SymCheckBox.Text = 'Sym (Mirror Grid)';
             app.SymCheckBox.ValueChangedFcn = @app.ParamChanged;
-            app.SymCheckBox.Layout.Row = 8;
+            app.SymCheckBox.Layout.Row = 7;
             app.SymCheckBox.Layout.Column = 1;
+
+            lbl = uilabel(app.ParamPanel);
+            lbl.Text = 'Deformation units:';
+            lbl.FontWeight = 'bold';
+            lbl.Layout.Row = 8;
+            lbl.Layout.Column = [1, 2];
+
+            app.UnitGrid = uigridlayout(app.ParamPanel, [1, 3]);
+            app.UnitGrid.RowHeight = {'fit'};
+            app.UnitGrid.ColumnWidth = {'fit', 'fit', 'fit'};
+            app.UnitGrid.Padding = [0, 0, 0, 0];
+            app.UnitGrid.Layout.Row = 9;
+            app.UnitGrid.Layout.Column = [1, 2];
+
+            app.UnitMM = uibutton(app.UnitGrid, 'ButtonPushed', @app.UnitChanged);
+            app.UnitMM.Text = 'mm';
+            app.UnitMM.BackgroundColor = [0.125, 0.161, 0.275];
+            app.UnitMM.FontColor = [0.996, 0.835, 0.008];
+            app.UnitMM.FontWeight = 'bold';
+            app.UnitMM.Layout.Row = 1;
+            app.UnitMM.Layout.Column = 1;
+
+            app.UnitUM = uibutton(app.UnitGrid, 'ButtonPushed', @app.UnitChanged);
+            app.UnitUM.Text = [char(181) 'm'];
+            app.UnitUM.FontWeight = 'bold';
+            app.UnitUM.Layout.Row = 1;
+            app.UnitUM.Layout.Column = 2;
+
+            app.UnitNM = uibutton(app.UnitGrid, 'ButtonPushed', @app.UnitChanged);
+            app.UnitNM.Text = 'nm';
+            app.UnitNM.FontWeight = 'bold';
+            app.UnitNM.Layout.Row = 1;
+            app.UnitNM.Layout.Column = 3;
+
+            lbl = uilabel(app.ParamPanel);
+            lbl.Text = 'Stats [urad]:';
+            lbl.FontWeight = 'bold';
+            lbl.Layout.Row = 10;
+            lbl.Layout.Column = [1, 2];
+
+            lbl = uilabel(app.ParamPanel);
+            lbl.Text = '       Sag       Lon';
+            lbl.FontWeight = 'bold';
+            lbl.Layout.Row = 11;
+            lbl.Layout.Column = [1, 2];
+
+            app.StatsGrid = uigridlayout(app.ParamPanel, [2, 3]);
+            app.StatsGrid.RowHeight = {'fit', 'fit'};
+            app.StatsGrid.ColumnWidth = {'fit', 'fit', 'fit'};
+            app.StatsGrid.Padding = [0, 0, 0, 0];
+            app.StatsGrid.RowSpacing = 2;
+            app.StatsGrid.ColumnSpacing = 5;
+            app.StatsGrid.Layout.Row = [12, 13];
+            app.StatsGrid.Layout.Column = [1, 2];
+
+            lbl = uilabel(app.StatsGrid);
+            lbl.Text = 'RMS:';
+            lbl.FontWeight = 'bold';
+            lbl.Layout.Row = 1;
+            lbl.Layout.Column = 1;
+
+            app.StatsLabelSagRMS = uilabel(app.StatsGrid);
+            app.StatsLabelSagRMS.Text = '--';
+            app.StatsLabelSagRMS.Layout.Row = 1;
+            app.StatsLabelSagRMS.Layout.Column = 2;
+
+            app.StatsLabelLonRMS = uilabel(app.StatsGrid);
+            app.StatsLabelLonRMS.Text = '--';
+            app.StatsLabelLonRMS.Layout.Row = 1;
+            app.StatsLabelLonRMS.Layout.Column = 3;
+
+            lbl = uilabel(app.StatsGrid);
+            lbl.Text = 'STD:';
+            lbl.FontWeight = 'bold';
+            lbl.Layout.Row = 2;
+            lbl.Layout.Column = 1;
+
+            app.StatsLabelSagSTD = uilabel(app.StatsGrid);
+            app.StatsLabelSagSTD.Text = '--';
+            app.StatsLabelSagSTD.Layout.Row = 2;
+            app.StatsLabelSagSTD.Layout.Column = 2;
+
+            app.StatsLabelLonSTD = uilabel(app.StatsGrid);
+            app.StatsLabelLonSTD.Text = '--';
+            app.StatsLabelLonSTD.Layout.Row = 2;
+            app.StatsLabelLonSTD.Layout.Column = 3;
 
             app.RunButton = uibutton(app.ParamPanel, 'ButtonPushed', @app.RunButtonPushed);
             app.RunButton.Text = 'Run Analysis';
             app.RunButton.BackgroundColor = [0.125, 0.161, 0.275];
             app.RunButton.FontColor = [0.996, 0.835, 0.008];
             app.RunButton.FontWeight = 'bold';
-            app.RunButton.Layout.Row = 10;
+            app.RunButton.Layout.Row = 14;
             app.RunButton.Layout.Column = 1;
 
             app.ExportDataButton = uibutton(app.ParamPanel, 'ButtonPushed', @app.ExportButtonPushed);
@@ -343,17 +471,17 @@ lbl = uilabel(app.ParamPanel);
             app.ExportDataButton.BackgroundColor = [0.125, 0.161, 0.275];
             app.ExportDataButton.FontColor = [0.996, 0.835, 0.008];
             app.ExportDataButton.FontWeight = 'bold';
-            app.ExportDataButton.Layout.Row = 11;
-            app.ExportDataButton.Layout.Column = 1;
+            app.ExportDataButton.Layout.Row = 14;
+            app.ExportDataButton.Layout.Column = 2;
 
             app.AnalysisStatusLabel = uilabel(app.ParamPanel);
             app.AnalysisStatusLabel.Text = 'Ready';
             app.AnalysisStatusLabel.FontWeight = 'bold';
             app.AnalysisStatusLabel.FontColor = [0.5, 0.5, 0.5];
-            app.AnalysisStatusLabel.Layout.Row = 12;
+            app.AnalysisStatusLabel.Layout.Row = 15;
             app.AnalysisStatusLabel.Layout.Column = [1, 2];
 
-            % -- Plot stack (2 rows: top = contours, bottom = line plots) --
+            % Plot stack
             app.plotStack = uigridlayout(app.AnalysisGrid, [2, 1]);
             app.plotStack.RowHeight = {'1x','1x'};
             app.plotStack.Padding = [10, 10, 30, 10];
@@ -361,11 +489,10 @@ lbl = uilabel(app.ParamPanel);
             app.plotStack.Layout.Row = 1;
             app.plotStack.Layout.Column = 2;
 
-            % Top plot group: contour axes in 2x1 grid
             app.TopPlotGroup = uigridlayout(app.plotStack, [2, 1]);
             app.TopPlotGroup.RowHeight = {'1x','1x'};
             app.TopPlotGroup.ColumnWidth = {'1x'};
-            app.TopPlotGroup.Padding = [2, 2, 2, 2];
+            app.TopPlotGroup.Padding = [2, 2, 40, 2];
             app.TopPlotGroup.RowSpacing = 2;
             app.TopPlotGroup.ColumnSpacing = 2;
             app.TopPlotGroup.Layout.Row = 1;
@@ -381,7 +508,6 @@ lbl = uilabel(app.ParamPanel);
             app.ContourPlotLon.Layout.Row = 2;
             app.ContourPlotLon.Layout.Column = 1;
 
-            % Bottom plot group: line axes in 2x2 grid
             app.BottomPlotGroup = uigridlayout(app.plotStack, [2, 2]);
             app.BottomPlotGroup.RowHeight = {'1x','1x'};
             app.BottomPlotGroup.ColumnWidth = {'1x','1x'};
@@ -406,6 +532,98 @@ lbl = uilabel(app.ParamPanel);
             app.LinePlotAx4 = axes(app.BottomPlotGroup);
             app.LinePlotAx4.Layout.Row = 2;
             app.LinePlotAx4.Layout.Column = 2;
+
+% ============ Tab 3: Comparison (1D only) ============
+            app.ComparisonTab = uitab(app.TabGroup, 'Title', 'Comparison');
+            app.ComparisonGrid = uigridlayout(app.ComparisonTab, [1, 2]);
+            app.ComparisonGrid.RowHeight = {'1x'};
+            app.ComparisonGrid.ColumnWidth = {220, '1x'};
+            app.ComparisonGrid.Padding = [5, 5, 5, 5];
+            app.ComparisonGrid.ColumnSpacing = 5;
+
+            % Left column nested grid (controls + tree)
+            app.CompLeftGrid = uigridlayout(app.ComparisonGrid, [6, 1]);
+            app.CompLeftGrid.RowHeight = {'fit', 'fit', 'fit', 'fit', 200, '1x'};
+            app.CompLeftGrid.Padding = [0, 0, 0, 0];
+            app.CompLeftGrid.RowSpacing = 3;
+            app.CompLeftGrid.Layout.Row = 1;
+            app.CompLeftGrid.Layout.Column = 1;
+
+            % Top row: Compare button
+            app.CompareButton = uibutton(app.CompLeftGrid, 'ButtonPushed', @app.CompareButtonPushed);
+            app.CompareButton.Text = 'Compare';
+            app.CompareButton.BackgroundColor = [0.125, 0.161, 0.275];
+            app.CompareButton.FontColor = [0.996, 0.835, 0.008];
+            app.CompareButton.FontWeight = 'bold';
+            app.CompareButton.Layout.Row = 1;
+            app.CompareButton.Layout.Column = 1;
+
+            % Deformation units label
+            lbl = uilabel(app.CompLeftGrid);
+            lbl.Text = 'Deformation units:';
+            lbl.FontWeight = 'bold';
+            lbl.Layout.Row = 2;
+            lbl.Layout.Column = 1;
+
+            % Unit buttons in a 1x3 grid
+            app.CompUnitGrid = uigridlayout(app.CompLeftGrid, [1, 3]);
+            app.CompUnitGrid.RowHeight = {'fit'};
+            app.CompUnitGrid.ColumnWidth = {'fit', 'fit', 'fit'};
+            app.CompUnitGrid.Padding = [0, 0, 0, 0];
+            app.CompUnitGrid.Layout.Row = 3;
+            app.CompUnitGrid.Layout.Column = 1;
+
+            app.CompUnitMM = uibutton(app.CompUnitGrid, 'ButtonPushed', @app.CompUnitChanged);
+            app.CompUnitMM.Text = 'mm';
+            app.CompUnitMM.BackgroundColor = [0.125, 0.161, 0.275];
+            app.CompUnitMM.FontColor = [0.996, 0.835, 0.008];
+            app.CompUnitMM.FontWeight = 'bold';
+            app.CompUnitMM.Layout.Row = 1;
+            app.CompUnitMM.Layout.Column = 1;
+
+            app.CompUnitUM = uibutton(app.CompUnitGrid, 'ButtonPushed', @app.CompUnitChanged);
+            app.CompUnitUM.Text = [char(181) 'm'];
+            app.CompUnitUM.FontWeight = 'bold';
+            app.CompUnitUM.Layout.Row = 1;
+            app.CompUnitUM.Layout.Column = 2;
+
+            app.CompUnitNM = uibutton(app.CompUnitGrid, 'ButtonPushed', @app.CompUnitChanged);
+            app.CompUnitNM.Text = 'nm';
+            app.CompUnitNM.FontWeight = 'bold';
+            app.CompUnitNM.Layout.Row = 1;
+            app.CompUnitNM.Layout.Column = 3;
+
+            % Note label
+            lbl = uilabel(app.CompLeftGrid);
+            lbl.Text = 'Note: Only 1D datasets shown.';
+            lbl.FontWeight = 'bold';
+            lbl.FontColor = [0.7, 0.7, 0.1];
+            lbl.Layout.Row = 4;
+            lbl.Layout.Column = 1;
+
+            % Checkbox tree (200px fixed height) with categories
+            app.CompTree = uitree(app.CompLeftGrid, 'checkbox');
+            app.CompTree.Layout.Row = 5;
+            app.CompTree.Layout.Column = 1;
+
+            % Comparison plots in a 2x1 sub-grid in column 2
+            app.CompPlotGrid = uigridlayout(app.ComparisonGrid, [2, 1]);
+            app.CompPlotGrid.RowHeight = {'1x','1x'};
+            app.CompPlotGrid.ColumnWidth = {'1x'};
+            app.CompPlotGrid.Padding = [2, 2, 2, 2];
+            app.CompPlotGrid.RowSpacing = 3;
+            app.CompPlotGrid.Layout.Row = 1;
+            app.CompPlotGrid.Layout.Column = 2;
+
+            app.CompDeformationAx = uiaxes(app.CompPlotGrid);
+            app.CompDeformationAx.Title.String = 'Deformation Comparison';
+            app.CompDeformationAx.Layout.Row = 1;
+            app.CompDeformationAx.Layout.Column = 1;
+
+            app.CompSlopeAx = uiaxes(app.CompPlotGrid);
+            app.CompSlopeAx.Title.String = 'Slope Comparison [urad]';
+            app.CompSlopeAx.Layout.Row = 2;
+            app.CompSlopeAx.Layout.Column = 1;
         end
     end
 
@@ -423,12 +641,36 @@ lbl = uilabel(app.ParamPanel);
             app.DirectionDropdown.Enable = false;
             app.DatasetDropdown.Items = {''};
             app.DatasetListBox.Items = {''};
+            app.ExportDatasetDropdown.Items = {''};
+            if ~isempty(app.CompTree.Children)
+                delete(app.CompTree.Children);
+            end
             app.ExportStatusLabel.Text = 'Ready';
             app.AnalysisStatusLabel.Text = 'Ready';
+            app.CurrentUnit = 'mm';
+            app.setActiveUnitButton(app.UnitMM, false);
+            app.setActiveUnitButton(app.CompUnitMM, true);
         end
-    end
 
-    methods (Access = private)
+        function unitScale = getUnitScale(app)
+            if app.CurrentUnit == "mm"
+                unitScale = 1;
+            elseif app.CurrentUnit == [char(181) 'm']
+                unitScale = 1000;
+            else
+                unitScale = 1e6;
+            end
+        end
+
+        function unitLabel = getUnitLabel(app)
+            if app.CurrentUnit == "mm"
+                unitLabel = 'mm';
+            elseif app.CurrentUnit == [char(181) 'm']
+                unitLabel = [char(181) 'm'];
+            else
+                unitLabel = 'nm';
+            end
+        end
 
         function refreshDatasetDropdowns(app)
             names = {};
@@ -440,9 +682,55 @@ lbl = uilabel(app.ParamPanel);
             end
             app.DatasetDropdown.Items = names;
             app.DatasetListBox.Items = names;
+            app.ExportDatasetDropdown.Items = names;
+            delete(app.CompTree.Children);
+            parentSag = []; parentLon = [];
+            for i = 1:length(app.Datasets)
+                if app.Datasets{i}.is2D
+                    continue
+                end
+                if strcmp(app.Datasets{i}.direction, 'Longitudinal')
+                    if isempty(parentLon)
+                        parentLon = uitreenode(app.CompTree, 'Text', 'Longitudinal', 'NodeData', 0);
+                    end
+                    uitreenode(parentLon, 'Text', app.Datasets{i}.name, 'NodeData', i);
+                else
+                    if isempty(parentSag)
+                        parentSag = uitreenode(app.CompTree, 'Text', 'Sagittal', 'NodeData', 0);
+                    end
+                    uitreenode(parentSag, 'Text', app.Datasets{i}.name, 'NodeData', i);
+                end
+            end
             if app.SelectedIndex > 0 && app.SelectedIndex <= length(app.Datasets)
                 app.DatasetDropdown.Value = app.Datasets{app.SelectedIndex}.name;
                 app.DatasetListBox.Value = app.Datasets{app.SelectedIndex}.name;
+            end
+        end
+
+        function updateStats(app, ds, S_sag, S_lon)
+            if ds.is2D
+                rms_sag = sqrt(mean(S_sag(:).^2));
+                std_sag = std(S_sag(:));
+                rms_lon = sqrt(mean(S_lon(:).^2));
+                std_lon = std(S_lon(:));
+                app.StatsLabelSagRMS.Text = sprintf('%.3f', rms_sag);
+                app.StatsLabelSagSTD.Text = sprintf('%.3f', std_sag);
+                app.StatsLabelLonRMS.Text = sprintf('%.3f', rms_lon);
+                app.StatsLabelLonSTD.Text = sprintf('%.3f', std_lon);
+            elseif strcmp(ds.direction, 'Sagittal')
+                rms_sag = sqrt(mean(S_sag(:).^2));
+                std_sag = std(S_sag(:));
+                app.StatsLabelSagRMS.Text = sprintf('%.3f', rms_sag);
+                app.StatsLabelSagSTD.Text = sprintf('%.3f', std_sag);
+                app.StatsLabelLonRMS.Text = 'N/A';
+                app.StatsLabelLonSTD.Text = 'N/A';
+            else
+                rms_lon = sqrt(mean(S_lon(:).^2));
+                std_lon = std(S_lon(:));
+                app.StatsLabelSagRMS.Text = 'N/A';
+                app.StatsLabelSagSTD.Text = 'N/A';
+                app.StatsLabelLonRMS.Text = sprintf('%.3f', rms_lon);
+                app.StatsLabelLonSTD.Text = sprintf('%.3f', std_lon);
             end
         end
 
@@ -467,6 +755,7 @@ lbl = uilabel(app.ParamPanel);
                 app.Datasets{app.SelectedIndex} = ds;
 
                 app.updatePlots(ds, X, Y, W, S_sag, S_lon);
+                app.updateStats(ds, S_sag, S_lon);
                 app.AnalysisStatusLabel.Text = 'Analysis updated successfully';
                 app.AnalysisStatusLabel.FontColor = [0, 0.5, 0];
             catch ME
@@ -500,6 +789,7 @@ lbl = uilabel(app.ParamPanel);
             else
                 app.plot1D(ds, X, Y, W, S_sag, S_lon);
 
+                colorbar(app.ContourPlotLon, 'off');
                 cla(app.ContourPlotLon);
                 app.ContourPlotLon.Visible = 'off';
                 app.ContourPlotSag.Layout.Row = [1, 2];
@@ -543,6 +833,8 @@ lbl = uilabel(app.ParamPanel);
                 Np = 1;
             end
             Np = min(Np, min(size(S_lon, 1), size(S_sag, 2)));
+            s = app.getUnitScale();
+            ul = app.getUnitLabel();
 
             cla(app.LinePlotAx1);
             cla(app.LinePlotAx2);
@@ -553,10 +845,10 @@ lbl = uilabel(app.ParamPanel);
                 idx = i * floor(size(S_lon, 1) / Np);
                 idy = i * floor(size(S_sag, 2) / Np);
 
-                plot(app.LinePlotAx1, X(:, idy), W(:, idy));
+                plot(app.LinePlotAx1, X(:, idy), W(:, idy) * s);
                 hold(app.LinePlotAx1, 'on');
 
-                plot(app.LinePlotAx2, Y(idx, :), W(idx, :));
+                plot(app.LinePlotAx2, Y(idx, :), W(idx, :) * s);
                 hold(app.LinePlotAx2, 'on');
 
                 plot(app.LinePlotAx3, X(:, idy), S_sag(:, idy));
@@ -567,11 +859,11 @@ lbl = uilabel(app.ParamPanel);
             end
 
             xlabel(app.LinePlotAx1, 'Sag. (x) [mm]', 'FontSize', 11);
-            ylabel(app.LinePlotAx1, 'Normal Disp. [mm]', 'FontSize', 11);
+            ylabel(app.LinePlotAx1, ['Normal Disp. [' ul ']'], 'FontSize', 11);
             grid(app.LinePlotAx1, 'on');
 
             xlabel(app.LinePlotAx2, 'Lon. (y) [mm]', 'FontSize', 11);
-            ylabel(app.LinePlotAx2, 'Normal Disp. [mm]', 'FontSize', 11);
+            ylabel(app.LinePlotAx2, ['Normal Disp. [' ul ']'], 'FontSize', 11);
             grid(app.LinePlotAx2, 'on');
 
             xlabel(app.LinePlotAx3, 'Sag. (x) [mm]', 'FontSize', 11);
@@ -589,6 +881,9 @@ lbl = uilabel(app.ParamPanel);
             colorbar(app.ContourPlotSag, 'off');
             colorbar(app.LinePlotAx1, 'off');
 
+            s = app.getUnitScale();
+            ul = app.getUnitLabel();
+
             if strcmp(ds.direction, 'Sagittal')
                 posLabel = 'Sag. (x) [mm]';
                 deformTitle = 'Sagittal Deformation';
@@ -601,9 +896,9 @@ lbl = uilabel(app.ParamPanel);
 
             pos = X(:,1);
 
-            plot(app.ContourPlotSag, pos, W(:,1), 'k-', 'LineWidth', 1.5);
+            plot(app.ContourPlotSag, pos, W(:,1) * s, 'k-', 'LineWidth', 1.5);
             xlabel(app.ContourPlotSag, posLabel, 'FontSize', 11);
-            ylabel(app.ContourPlotSag, 'Normal Disp. [mm]', 'FontSize', 11);
+            ylabel(app.ContourPlotSag, ['Normal Disp. [' ul ']'], 'FontSize', 11);
             title(app.ContourPlotSag, deformTitle, 'FontSize', 11);
             grid(app.ContourPlotSag, 'on');
 
@@ -633,7 +928,10 @@ lbl = uilabel(app.ParamPanel);
                 if ~isempty(cmap)
                     colormap(ax, cmap);
                 end
-                cb_src = findobj(src, 'Type', 'Colorbar');
+                cb_src = [];
+                if isprop(src, 'Colorbars') && ~isempty(src.Colorbars)
+                    cb_src = src.Colorbars(1);
+                end
                 if ~isempty(cb_src)
                     cb = colorbar(ax);
                     cb.Label.String = cb_src.Label.String;
@@ -643,6 +941,164 @@ lbl = uilabel(app.ParamPanel);
             end
             exportgraphics(f, fn, 'Resolution', 150);
             delete(f);
+        end
+
+        function setActiveUnitButton(app, activeBtn, isComp)
+            if isComp
+                others = {app.CompUnitMM, app.CompUnitUM, app.CompUnitNM};
+            else
+                others = {app.UnitMM, app.UnitUM, app.UnitNM};
+            end
+            for i = 1:length(others)
+                btn = others{i};
+                if btn == activeBtn
+                    btn.BackgroundColor = [0.125, 0.161, 0.275];
+                    btn.FontColor = [0.996, 0.835, 0.008];
+                else
+                    btn.BackgroundColor = [0.8, 0.8, 0.8];
+                    btn.FontColor = [0, 0, 0];
+                end
+            end
+        end
+
+        function UnitChanged(app, src, event)
+            app.CurrentUnit = src.Text;
+            app.setActiveUnitButton(src, false);
+            if app.SelectedIndex > 0 && app.SelectedIndex <= length(app.Datasets)
+                ds = app.Datasets{app.SelectedIndex};
+                outputs = ds.sloperOutputs;
+                if ~isempty(outputs) && numel(outputs) >= 12
+                    app.updatePlots(ds, outputs{1}, outputs{2}, outputs{5}, outputs{6}, outputs{7});
+                end
+            end
+        end
+
+        function CompUnitChanged(app, src, event)
+            app.CurrentUnit = src.Text;
+            app.setActiveUnitButton(src, true);
+            idxList = app.getCheckedDatasetIndices();
+            if numel(idxList) >= 2
+                app.doComparison(idxList);
+            end
+        end
+
+        function idxList = getCheckedDatasetIndices(app)
+            checked = app.CompTree.CheckedNodes;
+            idxList = [];
+            for k = 1:length(checked)
+                di = checked(k).NodeData;
+                if isempty(di) || ~isnumeric(di) || di < 1
+                    continue
+                end
+                idxList(end+1) = di;
+            end
+            idxList = unique(idxList);
+        end
+
+        function CompareButtonPushed(app, src, event)
+            idxList = app.getCheckedDatasetIndices();
+            if numel(idxList) < 2
+                app.CompDeformationAx.Title.String = 'Check 2+ datasets, then press Compare';
+                cla(app.CompDeformationAx);
+                cla(app.CompSlopeAx);
+                return
+            end
+            if numel(idxList) > 7
+                app.CompDeformationAx.Title.String = 'Maximum 7 datasets can be compared';
+                cla(app.CompDeformationAx);
+                cla(app.CompSlopeAx);
+                return
+            end
+
+            dirs = {};
+            for k = 1:numel(idxList)
+                ds = app.Datasets{idxList(k)};
+                if ds.is2D
+                    app.AnalysisStatusLabel.Text = 'Comparison only supports 1D datasets';
+                    app.AnalysisStatusLabel.FontColor = [0.8, 0, 0];
+                    cla(app.CompDeformationAx);
+                    cla(app.CompSlopeAx);
+                    return
+                end
+                dirs{end+1} = ds.direction;
+                app.runAnalysisByIndex(idxList(k));
+            end
+
+            refDir = dirs{1};
+            for i = 2:length(dirs)
+                if ~strcmp(dirs{i}, refDir)
+                    app.AnalysisStatusLabel.Text = 'Compare sagittal-to-sagittal or longitudinal-to-longitudinal only';
+                    app.AnalysisStatusLabel.FontColor = [0.8, 0, 0];
+                    cla(app.CompDeformationAx);
+                    cla(app.CompSlopeAx);
+                    return
+                end
+            end
+
+            app.AnalysisStatusLabel.Text = '';
+            app.doComparison(idxList);
+        end
+
+        function doComparison(app, idxList)
+            cla(app.CompDeformationAx);
+            cla(app.CompSlopeAx);
+            s = app.getUnitScale();
+            ul = app.getUnitLabel();
+            matColors = [0, 0.4470, 0.7410; 0.8500, 0.3250, 0.0980; ...
+                         0.9290, 0.6940, 0.1250; 0.4940, 0.1840, 0.5560; ...
+                         0.4660, 0.6740, 0.1880; 0.3010, 0.7450, 0.9330; ...
+                         0.6350, 0.0780, 0.1840];
+            hold(app.CompDeformationAx, 'on');
+            hold(app.CompSlopeAx, 'on');
+
+            n = min(numel(idxList), 7);
+            for j = 1:n
+                ds = app.Datasets{idxList(j)};
+                outputs = ds.sloperOutputs;
+                if isempty(outputs) || numel(outputs) < 12
+                    continue
+                end
+                Xo = outputs{1}; Wo = outputs{5}; S_sag_o = outputs{7};
+                c = matColors(j, :);
+
+                if strcmp(ds.direction, 'Sagittal') || ds.is2D
+                    plot(app.CompDeformationAx, Xo(:,1), Wo(:,1) * s, 'Color', c, 'LineWidth', 1.5, 'DisplayName', ds.name);
+                    plot(app.CompSlopeAx, Xo(:,1), S_sag_o(:,1), 'Color', c, 'LineWidth', 1.5, 'DisplayName', ds.name);
+                else
+                    plot(app.CompDeformationAx, Xo(:,1), Wo(:,1) * s, 'Color', c, 'LineWidth', 1.5, 'DisplayName', ds.name);
+                    plot(app.CompSlopeAx, Xo(:,1), S_sag_o(:,1), 'Color', c, 'LineWidth', 1.5, 'DisplayName', ds.name);
+                end
+            end
+
+            xlabel(app.CompDeformationAx, 'Position [mm]', 'FontSize', 11);
+            ylabel(app.CompDeformationAx, ['Normal Disp. [' ul ']'], 'FontSize', 11);
+            legend(app.CompDeformationAx, 'Location', 'best');
+            grid(app.CompDeformationAx, 'on');
+
+            xlabel(app.CompSlopeAx, 'Position [mm]', 'FontSize', 11);
+            ylabel(app.CompSlopeAx, 'Slope [urad]', 'FontSize', 11);
+            legend(app.CompSlopeAx, 'Location', 'best');
+            grid(app.CompSlopeAx, 'on');
+        end
+
+        function runAnalysisByIndex(app, idx)
+            ds = app.Datasets{idx};
+            if ~isempty(ds.sloperOutputs) && numel(ds.sloperOutputs) >= 12
+                return
+            end
+            try
+                data0 = ds.data0;
+                if ~ds.is2D && strcmp(ds.direction, 'Longitudinal')
+                    data0 = data0(:, [1, 3, 2, 4, 5, 6, 7]);
+                end
+                [X, Y, U, V, W, S_lon, S_sag, x, y, u, v, w] = ...
+                    sloper(data0, app.NxxField.Value, app.NyyField.Value, ...
+                    app.FIDCheckBox.Value, int16(app.OrderField.Value), ...
+                    app.SymCheckBox.Value, ds.is2D);
+                ds.sloperOutputs = {X, Y, U, V, W, S_lon, S_sag, x, y, u, v, w};
+                app.Datasets{idx} = ds;
+            catch
+            end
         end
     end
 
@@ -659,6 +1115,12 @@ lbl = uilabel(app.ParamPanel);
         function DataTypeDropdownChanged(app, src, event)
             is1D = strcmp(app.DataTypeDropdown.Value, '1D');
             app.DirectionDropdown.Enable = is1D;
+        end
+
+        function ExportDatasetDropdownChanged(app, src, event)
+            if isempty(app.ExportDatasetDropdown.Value) || strcmp(app.ExportDatasetDropdown.Value, '')
+                return
+            end
         end
 
         function AddDatasetButtonPushed(app, src, event)
@@ -783,8 +1245,20 @@ lbl = uilabel(app.ParamPanel);
         end
 
         function ExportButtonPushed(app, src, event)
-            if app.SelectedIndex < 1 || app.SelectedIndex > length(app.Datasets)
-                app.ExportStatusLabel.Text = 'No dataset selected';
+            exportName = app.ExportDatasetDropdown.Value;
+            if isempty(exportName) || strcmp(exportName, '')
+                app.ExportStatusLabel.Text = 'No dataset selected for export';
+                return
+            end
+            exportIdx = 0;
+            for i = 1:length(app.Datasets)
+                if strcmp(app.Datasets{i}.name, exportName)
+                    exportIdx = i;
+                    break
+                end
+            end
+            if exportIdx == 0
+                app.ExportStatusLabel.Text = 'No dataset selected for export';
                 return
             end
             expdir = app.ExportDirField.Value;
@@ -803,7 +1277,7 @@ lbl = uilabel(app.ParamPanel);
                 return
             end
 
-            ds = app.Datasets{app.SelectedIndex};
+            ds = app.Datasets{exportIdx};
             outputs = ds.sloperOutputs;
             if isempty(outputs) || numel(outputs) < 12
                 app.ExportStatusLabel.Text = 'Run analysis before exporting';
@@ -838,7 +1312,8 @@ lbl = uilabel(app.ParamPanel);
                 pause(0.05);
                 fn = fullfile(expdir, expname);
                 if ds.is2D
-                    app.exportAxesGrid({app.ContourPlotSag, app.ContourPlotLon}, 2, 1, fn + '-ContourPlots.png');
+                    exportgraphics(app.ContourPlotSag, fn + '-SagittalSlope.png', 'Resolution', 150);
+                    exportgraphics(app.ContourPlotLon, fn + '-LongitudinalSlope.png', 'Resolution', 150);
                     app.exportAxesGrid({app.LinePlotAx1, app.LinePlotAx2, app.LinePlotAx3, app.LinePlotAx4}, 2, 2, fn + '-LinePlots.png');
                 else
                     exportgraphics(app.ContourPlotSag, fn + '-Deformation.png', 'Resolution', 150);
